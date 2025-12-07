@@ -68,7 +68,11 @@ if roadblock:
     if st.button("Block Now"):
         if block_to in graph[block_from]:
             graph[block_from].pop(block_to)
-            st.error(f"🚧 Road blocked: {block_from} -> {block_to}")
+            # st.error(f"🚧 Road blocked: {block_from} -> {block_to}")
+    if block_from in graph[block_to]:
+        graph[block_to].pop(block_from)
+
+st.error(f"🚧 Road blocked: {block_from} ✖ {block_to} (Both Directions Closed)")
 
 if st.button("Find Best Route"):
     bfs_path = bfs(start, goal)
