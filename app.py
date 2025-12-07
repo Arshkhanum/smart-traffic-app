@@ -62,17 +62,36 @@ if traffic:
             graph[city][dest] += random.randint(0, 3)
     st.warning("🚦 Traffic Applied: Route weights increased")
 
+# if roadblock:
+#     block_from = st.selectbox("Block From:", cities)
+#     block_to = st.selectbox("Block To:", cities)
+#     if st.button("Block Now"):
+#         if block_to in graph[block_from]:
+#             graph[block_from].pop(block_to)
+#             # st.error(f"🚧 Road blocked: {block_from} -> {block_to}")
+#     if block_from in graph[block_to]:
+#         graph[block_to].pop(block_from)
+
+#     st.error(f"🚧 Road blocked: {block_from} ✖ {block_to} (Both Directions Closed)")
+
 if roadblock:
     block_from = st.selectbox("Block From:", cities)
     block_to = st.selectbox("Block To:", cities)
     if st.button("Block Now"):
+        changed = False
+        
         if block_to in graph[block_from]:
             graph[block_from].pop(block_to)
-            # st.error(f"🚧 Road blocked: {block_from} -> {block_to}")
-    if block_from in graph[block_to]:
-        graph[block_to].pop(block_from)
+            changed = True
 
-    st.error(f"🚧 Road blocked: {block_from} ✖ {block_to} (Both Directions Closed)")
+        if block_from in graph[block_to]:
+            graph[block_to].pop(block_from)
+            changed = True
+
+        if changed:
+            st.error(f"🚧 Road fully blocked between {block_from} ↔ {block_to}")
+        else:
+            st.warning("❗ That road is already blocked or doesn't exist.")
 
 if st.button("Find Best Route"):
     bfs_path = bfs(start, goal)
