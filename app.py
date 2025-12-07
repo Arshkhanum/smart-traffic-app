@@ -111,7 +111,7 @@ import heapq
 from collections import deque
 import random
 
-# ---- Initialize Graph in Session State ----
+# Initialize session graph only once
 if "graph" not in st.session_state:
     st.session_state.graph = {
         'Majestic': {'Rajajinagar': 4, 'Jayanagar': 6},
@@ -122,90 +122,94 @@ if "graph" not in st.session_state:
         'Silk Board': {'BTM': 2}
     }
 
-graph = st.session_state.graph
+graph = st.session_state.graph   # use persistent graph
 
+# Heuristic values remain constant
 heuristic = {
     'Majestic': 7, 'Rajajinagar': 6, 'Yeshwanthpur': 10,
     'Jayanagar': 4, 'BTM': 3, 'Silk Board': 0
 }
 
-# ---- BFS Algorithm ----
+# ---------------- BFS -----------------
 def bfs(start, goal):
     queue = deque([(start, [start])])
     visited = set()
+
     while queue:
         current, path = queue.popleft()
         if current == goal:
             return path
+        
         visited.add(current)
-        for neighbor in graph.get(current, {}):
+        for neighbor in graph[current]:
             if neighbor not in visited:
                 queue.append((neighbor, path + [neighbor]))
-    return None
+    return None  # No route found
 
-# ---- A* Algorithm ----
+# ---------------- A* ------------------
 def astar(start, goal):
     pq = [(0, start, [start], 0)]
     visited = set()
+
     while pq:
         f, current, path, g = heapq.heappop(pq)
+
         if current == goal:
             return path, g
+
         visited.add(current)
-        for neighbor, cost in graph.get(current, {}).items():
+        for neighbor, cost in graph[current].items():
             if neighbor not in visited:
                 g_new = g + cost
-                f_new = g_new + heuristic.get(neighbor, 999)
+                f_new = g_new + heuristic[neighbor]
                 heapq.heappush(pq, (f_new, neighbor, path + [neighbor], g_new))
-    return None, None  # No path found
+
+    return None, None  # No route exists
 
 
-# ---- UI ----
-st.title("🚦 Smart Traffic Route Finder")
-st.write("Uses BFS & A* Algorithms (Real-World GPS Simulation)")
+# ---------------- UI ------------------
+st.title("🚦 Smart Traffic Navigation System")
+st.write("AI Search using **BFS vs A\*** like Google Maps.")
 
 cities = list(graph.keys())
 
-start = st.selectbox("Select Start Location", cities)
+start = st.selectbox("Select Starting Point", cities)
 goal = st.selectbox("Select Destination", cities)
 
-# ---- Traffic Simulation ----
-traffic = st.checkbox("Simulate Traffic")
-if traffic:
-    for city in graph:
-        for dest in graph[city]:
-            graph[city][dest] += random.randint(1, 4)
-    st.warning("🚦 Traffic Applied: Route Weights Increased")
+# Apply traffic modifications
+if st.checkbox("Simulate Traffic (Random Delay)"):
+    for a in graph:
+        for b in graph[a]:
+            graph[a][b] += random.randint(0, 3)
+    st.warning("🚦 Traffic applied! Road travel time increased.")
 
-# ---- Block Road Feature ----
-roadblock = st.checkbox("Block a Road")
-
-if roadblock:
-    block_from = st.selectbox("Block From:", cities)
-    block_to = st.selectbox("Block To:", cities)
+# Road blocking
+if st.checkbox("Block a Road"):
+    col1, col2 = st.columns(2)
+    block_from = col1.selectbox("Block From", cities)
+    block_to = col2.selectbox("Block To", cities)
 
     if st.button("Block Now"):
-        if block_to in graph.get(block_from, {}):
+        if block_to in graph[block_from]:
             graph[block_from].pop(block_to)
-            st.error(f"🚧 Road blocked: {block_from} → {block_to}")
+            st.error(f"🚧 ROAD CLOSED: {block_from} → {block_to}")
         else:
-            st.info("⚠ This road is already blocked.")
+            st.warning("⚠ That road is already blocked or invalid.")
 
-# ---- Run Search ----
+# Run routing
 if st.button("Find Best Route"):
     bfs_path = bfs(start, goal)
     a_path, cost = astar(start, goal)
 
-    st.subheader("🔍 Results")
+    st.subheader("📍 Results")
 
     if bfs_path:
-        st.write("➡ BFS Route:", bfs_path)
+        st.write(f"🔹 **BFS Path:** {bfs_path}")
     else:
-        st.error("❌ BFS could not find any route.")
+        st.error("❌ No BFS Route Available.")
 
     if a_path:
-        st.write("➡ A* Optimal Route:", a_path)
-        st.write("🛣 Travel Cost:", cost)
-        st.success("A* found the best route using heuristic intelligence.")
+        st.write(f"✨ **A\* Optimal Path:** {a_path}")
+        st.write(f"🛣️ Total Cost: **{cost}**")
     else:
-        st.error("❌ A* could NOT find a path — because of traffic or road blocks.")
+        st.error("🚫 No optimal path exists due to traffic/road closure.")
